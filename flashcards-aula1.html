@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flashcards: palavras do texto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#1c2733;--mute:#5d6b7a;--line:#dde3ea;--acc:#0b6e69;--hl:#d5f0ec;--back:#eef8f6;--warn:#7a4300}
+*{box-sizing:border-box}
+body{margin:0;padding:10px;font:16px/1.4 "Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);background:#fff}
+.wrap{max-width:520px;margin:0 auto}
+.prog{display:flex;justify-content:space-between;color:var(--mute);font-size:.85rem;margin-bottom:4px}
+.bar{height:4px;background:var(--line);border-radius:2px;margin-bottom:10px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--acc);transition:width .25s}
+.card{min-height:200px;padding:16px;border:2px solid var(--ink);border-radius:12px;background:#fff;box-shadow:4px 4px 0 var(--hl);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;cursor:pointer;user-select:none}
+.card.back{background:var(--back)}
+.card small{color:var(--mute);font-size:.8rem}
+.w{font-size:2.1rem;line-height:1.15;font-weight:700;overflow-wrap:anywhere}
+.hint{color:var(--mute);font-size:.85rem}
+.tag{background:var(--hl);color:var(--acc);padding:1px 10px;border-radius:999px;font-size:.8rem;font-weight:700}
+.ex{margin:2px 0 0;font-size:.95rem}
+.ex mark{background:#ffe9a8;color:var(--ink);padding:0 2px;border-radius:3px}
+.note{margin:0;color:var(--warn);font-size:.85rem}
+.act{display:flex;gap:8px;margin-top:12px}
+.b{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:44px;padding:8px 10px;border:2px solid var(--acc);border-radius:10px;background:#fff;color:var(--acc);font:inherit;font-size:.95rem;font-weight:700;cursor:pointer}
+.b.ou{flex:0 0 auto;padding:8px 12px}
+.b:hover{background:var(--hl)}
+.b.p{background:var(--acc);color:#fff}
+.b.p:hover{background:#085a56}
+.b.no{border-color:var(--warn);color:var(--warn)}
+.b.no:hover{background:#fff1d9}
+.b svg{width:16px;height:16px;fill:currentColor}
+.card:focus-visible,.b:focus-visible,select:focus-visible,.chk input:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.msg{margin:8px 0 0;text-align:center;color:var(--warn);font-size:.85rem}
+.msg:empty{display:none}
+.tools{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+select{flex:1 1 180px;min-width:0;font:inherit;font-size:.9rem;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+.chk{display:flex;align-items:center;gap:6px;font-size:.9rem;cursor:pointer}
+.chk input{width:18px;height:18px;accent-color:var(--acc)}
+.end{border:2px solid var(--ink);border-radius:12px;box-shadow:4px 4px 0 var(--hl);padding:20px 14px;text-align:center}
+.end .big{font-size:2.4rem;font-weight:700;line-height:1.1;color:var(--acc)}
+.end p{margin:4px 0 0;font-size:.95rem}
+@media (prefers-reduced-motion:no-preference){.card.pop{animation:pop .18s ease-out}@keyframes pop{from{transform:scale(.97);opacity:.6}to{transform:none;opacity:1}}}
+@media (max-width:400px){.w{font-size:1.9rem}.card{min-height:180px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div id="stage"></div>
+<p class="msg" id="msg" role="status"></p>
+<div class="tools">
+<select id="mode" aria-label="Quais palavras estudar"></select>
+<label class="chk"><input type="checkbox" id="sh"> Embaralhar</label>
+</div>
+</div>
+
+<script>
+var TEXT="My name is Julia. I am a doctor and I am from Brazil. I live in a beautiful city in Minas Gerais. My family is very important to me. My father is a musician. He plays the piano and the guitar. My mother is a professor. She teaches history at the university. My brother is a student. He studies medicine. He is intelligent and very curious. Today is a special day. It is my mother’s birthday. We have a family dinner at a famous restaurant in my city. The restaurant is excellent! The menu is simple but interesting: pasta, salad, natural juice and a delicious chocolate dessert. My mother is happy. She receives a present: a beautiful book about art. She is emotional. My father plays a romantic song on the guitar. Everyone is very happy. The day is perfect and calm. We have music, sentimental conversations and fantastic moments. Family is the most important thing in my life.";
+// [inglês, português, cognato (1/0), observação]
+var C=[["my","meu, minha",0],["name","nome",0],["I","eu",0],["am","sou, estou",0],["is","é, está",0],["and","e",0],
+["doctor","médica",1],["from","de (origem)",0],["live","moro (morar)",0],["beautiful","bonita",0],["city","cidade",1],["family","família",1],["very","muito",0],["important","importante",1],
+["father","pai",0],["musician","músico",1],["he","ele",0],["plays","toca (tocar)",0,"Play também significa jogar."],["piano","piano",1],["guitar","violão",1,"Guitar serve para violão e para guitarra."],
+["mother","mãe",0],["professor","professora",1],["she","ela",0],["teaches","ensina (ensinar)",0],["history","história",1],["university","universidade",1],["brother","irmão",0],["student","estudante",1],["studies","estuda (estudar)",1],["medicine","medicina",1],["intelligent","inteligente",1],["curious","curioso",1],
+["today","hoje",0],["special","especial",1],["day","dia",0],["birthday","aniversário",0],["we","nós",0],["have","temos (ter)",0],["dinner","jantar",0],["famous","famoso",1],["restaurant","restaurante",1],["excellent","excelente",1],["menu","cardápio, menu",1],["simple","simples",1],["but","mas",0],["interesting","interessante",1],["pasta","massa",0,"Em português, “pasta” é outra coisa (pasta de dente, pasta de arquivos)."],["salad","salada",1],["natural","natural",1],["juice","suco",0],["delicious","delicioso",1],["chocolate","chocolate",1],["dessert","sobremesa",0,"Não confunda com desert (deserto)."],
+["happy","feliz",0],["receives","recebe (receber)",1],["present","presente",1],["book","livro",0],["about","sobre",0],["art","arte",1],["emotional","emocionada",1],
+["romantic","romântica",1],["song","canção, música",0],["everyone","todos",0],["perfect","perfeito",1],["calm","calmo",1],["music","música",1],["sentimental","sentimentais",1],["conversations","conversas",1],["fantastic","fantástico",1],["moments","momentos",1],
+["most","mais",0],["thing","coisa",0],["life","vida",0]];
+var S=TEXT.match(/[^.!?]+[.!?]+/g).map(function(x){return x.trim()});
+var stage=document.getElementById('stage'),msg=document.getElementById('msg'),mode=document.getElementById('mode'),sh=document.getElementById('sh');
+var ico='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 4V5L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>';
+var deck=[],i=0,flipped=false,known={},pop=false;
+var nCog=C.filter(function(c){return c[2]}).length;
+mode.innerHTML='<option value="all">Todas as palavras ('+C.length+')</option><option value="cog">Só cognatos ('+nCog+')</option><option value="oth">Só as que não são cognatos ('+(C.length-nCog)+')</option>';
+
+function ctx(w){
+  var re=new RegExp('\\b'+w+'\\b','i');
+  for(var k=0;k<S.length;k++)if(re.test(S[k]))return S[k].replace(re,function(m){return '<mark>'+m+'</mark>'});
+  return '';
+}
+function base(){
+  var m=mode.value,out=[];
+  C.forEach(function(c,k){if(m==='all'||(m==='cog'&&c[2])||(m==='oth'&&!c[2]))out.push(k)});
+  return out;
+}
+function shuffle(a){for(var k=a.length-1;k>0;k--){var j=Math.floor(Math.random()*(k+1)),t=a[k];a[k]=a[j];a[j]=t}return a}
+function start(list){deck=list.slice();if(sh.checked)shuffle(deck);i=0;flipped=false;known={};msg.textContent='';render()}
+function count(){return Object.keys(known).length}
+
+function render(){
+  if(i>=deck.length){
+    var miss=deck.filter(function(k){return !known[k]});
+    stage.innerHTML='<div class="end"><div class="big">'+count()+' de '+deck.length+'</div><p>palavras marcadas como “já sei”.</p>'+
+      (miss.length?'<p class="hint">Faltam '+miss.length+' para revisar.</p>':'<p class="hint">Você marcou todas. Quando quiser, comece de novo e tente sem olhar a tradução.</p>')+
+      '</div><div class="act">'+(miss.length?'<button class="b p" id="rev">Revisar as que faltam ('+miss.length+')</button>':'')+'<button class="b" id="again">Recomeçar</button></div>';
+    stage.dataset.miss=miss.join(',');
+    return;
+  }
+  var c=C[deck[i]],pct=Math.round(i/deck.length*100);
+  var card=flipped
+    ?'<small>Português</small><div class="w">'+c[1]+'</div>'+(c[2]?'<span class="tag">Cognato</span>':'')+'<p class="ex">'+ctx(c[0])+'</p>'+(c[3]?'<p class="note">'+c[3]+'</p>':'')
+    :'<small>Inglês</small><div class="w">'+c[0]+'</div><span class="hint">Toque para ver a tradução</span>';
+  stage.innerHTML='<div class="prog"><span>Cartão '+(i+1)+' de '+deck.length+'</span><span>Já sei: '+count()+'</span></div>'+
+    '<div class="bar"><i style="width:'+pct+'%"></i></div>'+
+    '<div class="card'+(flipped?' back':'')+(pop?' pop':'')+'" id="card" role="button" tabindex="0" aria-live="polite" aria-label="Virar cartão">'+card+'</div>'+
+    '<div class="act"><button class="b ou" id="ou">'+ico+'Ouvir</button>'+
+    (flipped?'<button class="b no" id="no">Ainda não</button><button class="b p" id="yes">Já sei</button>':'<button class="b p" id="flip">Mostrar tradução</button>')+'</div>';
+  pop=false;
+}
+function flip(){flipped=!flipped;pop=true;render();var c=document.getElementById('card');if(c)c.focus({preventScroll:true})}
+function next(yes){if(yes)known[deck[i]]=true;i++;flipped=false;pop=true;render()}
+
+function speak(w){
+  var ss=window.speechSynthesis;msg.textContent='';
+  if(!ss||!window.SpeechSynthesisUtterance){msg.textContent='Este navegador não toca o áudio aqui. Tente abrir a página no Chrome ou no Safari.';return}
+  ss.cancel();
+  var u=new SpeechSynthesisUtterance(w);u.lang='en-US';u.rate=.8;
+  var vs=ss.getVoices(),v=vs.filter(function(x){return /^en[-_]US/i.test(x.lang)})[0]||vs.filter(function(x){return /^en/i.test(x.lang)})[0];
+  if(v)u.voice=v;
+  u.onerror=function(){msg.textContent='Não foi possível tocar o áudio. Verifique o volume e tente de novo.'};
+  ss.speak(u);
+}
+if(window.speechSynthesis)speechSynthesis.getVoices();
+
+stage.addEventListener('click',function(e){
+  var t=e.target.closest('[id]');if(!t)return;
+  switch(t.id){
+    case 'card':case 'flip':flip();break;
+    case 'yes':next(true);break;
+    case 'no':next(false);break;
+    case 'ou':speak(C[deck[i]][0]);break;
+    case 'again':start(base());break;
+    case 'rev':start(stage.dataset.miss.split(',').map(Number));break;
+  }
+});
+stage.addEventListener('keydown',function(e){
+  if(e.target.id==='card'&&(e.key==='Enter'||e.key===' ')){e.preventDefault();flip()}
+});
+mode.addEventListener('change',function(){start(base())});
+sh.addEventListener('change',function(){start(base())});
+start(base());
+</script>
+</body>
+</html>
